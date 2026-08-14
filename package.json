@@ -1,0 +1,27 @@
+{
+  "name": "omnivoice-ai",
+  "version": "1.0.0",
+  "description": "Real-Time Bidirectional Speech-to-Speech AI Meeting Translator for Google Meet, Zoom, and Teams with Floating Captions.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "agent": "python desktop_agent.py"
+  },
+  "keywords": [
+    "speech-to-speech",
+    "real-time-translation",
+    "google-meet-translator",
+    "zoom-translator",
+    "speech-recognition",
+    "text-to-speech",
+    "virtual-audio-cable",
+    "omnivoice"
+  ],
+  "author": "Rajesh Sahu",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "ws": "^8.17.0"
+  }
+}

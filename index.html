@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OmniVoice AI - Real-Time Meeting Speech Translator</title>
+  <meta name="description" content="Universal real-time speech-to-speech AI translator for Google Meet, Microsoft Teams, and Zoom supporting 100+ global languages.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Navbar Header -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon">🎙️</div>
+      <div>
+        <div class="brand-title">OmniVoice AI</div>
+        <div class="brand-subtitle">Real-Time Meeting Speech-to-Speech Translator</div>
+      </div>
+    </div>
+
+    <div class="status-pills">
+      <button class="btn btn-secondary" id="togglePipBtn" style="padding: 0.4rem 0.9rem; font-size: 0.85rem; border-radius: 20px; background: linear-gradient(135deg, rgba(139,92,246,0.3), rgba(6,182,212,0.3)); border: 1px solid rgba(139,92,246,0.5);">
+        📺 Float Subtitles (PiP)
+      </button>
+      <div class="pill">
+        <span class="pulse-dot"></span>
+        <span id="meetStatus">Universal Meeting Ready</span>
+      </div>
+      <div class="pill" title="Processing Latency">
+        <span>⚡ Latency: <strong id="latencyDisplay">115ms</strong></span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main App Layout Container -->
+  <main class="container">
+
+    <!-- Platform Selector Bar -->
+    <section class="platform-bar" style="margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(15, 23, 42, 0.6); padding: 0.8rem 1.2rem; border-radius: 16px; border: 1px solid var(--glass-border);">
+      <div style="display: flex; align-items: center; gap: 0.6rem;">
+        <span style="font-weight: 600; font-size: 0.9rem; color: #cbd5e1;">🎯 Target Meeting App:</span>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button class="platform-chip active" data-platform="meet">🌐 Google Meet</button>
+          <button class="platform-chip" data-platform="zoom">💻 Zoom App</button>
+          <button class="platform-chip" data-platform="teams">👥 MS Teams</button>
+          <button class="platform-chip" data-platform="discord">💬 Discord / WhatsApp</button>
+        </div>
+      </div>
+      <span style="font-size: 0.8rem; color: #94a3b8;" id="platformGuideHint">Google Meet: Captures Tab Audio + Virtual Cable Mic Outbound</span>
+    </section>
+
+    <!-- Laptop Meeting Explanation Banner -->
+    <section class="laptop-info-card">
+      <div class="info-content">
+        <div class="info-icon">💻</div>
+        <div class="info-text">
+          <h3>How OmniVoice AI Channels Work During Your Call</h3>
+          <p>
+            <strong>Left Card (Outbound):</strong> Captures <em>your voice</em> (Hindi) ➔ Translates & speaks to meeting members (English).<br>
+            <strong>Right Card (Inbound):</strong> Captures <em>other members' voice</em> (English) ➔ Translates & speaks into your headphones (Hindi).
+          </p>
+        </div>
+      </div>
+      <button class="btn btn-secondary" id="openWizardBtn">
+        How it Works ➔
+      </button>
+    </section>
+
+    <!-- Control Hub Bar -->
+    <section class="control-bar">
+      <div class="language-selectors">
+        
+        <!-- Outbound Language (My Voice) -->
+        <div class="select-group">
+          <label for="myLanguageSelect">My Native Language (I Speak)</label>
+          <div class="select-wrapper">
+            <select id="myLanguageSelect">
+              <option value="hi-IN" selected>🇮🇳 Hindi (हिन्दी)</option>
+              <option value="en-US">🇺🇸 English (US)</option>
+              <option value="ne-NP">🇳🇵 Nepali (नेपाली)</option>
+              <option value="de-DE">🇩🇪 German (Deutsch)</option>
+              <option value="ru-RU">🇷🇺 Russian (Русский)</option>
+              <option value="es-ES">🇪🇸 Spanish (Español)</option>
+              <option value="fr-FR">🇫🇷 French (Français)</option>
+              <option value="it-IT">🇮🇹 Italian (Italiano)</option>
+              <option value="pt-PT">🇵🇹 Portuguese (Português)</option>
+              <option value="ja-JP">🇯🇵 Japanese (日本語)</option>
+              <option value="ko-KR">🇰🇷 Korean (한국어)</option>
+              <option value="zh-CN">🇨🇳 Mandarin (中文)</option>
+              <option value="ar-SA">🇸🇦 Arabic (العربية)</option>
+              <option value="bn-IN">🇧🇩 Bengali (বাংলা)</option>
+              <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+              <option value="te-IN">🇮🇳 Telugu (తెలుగు)</option>
+              <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+              <option value="gu-IN">🇮🇳 Gujarati (ગુજરાતી)</option>
+              <option value="pa-IN">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+              <option value="tr-TR">🇹🇷 Turkish (Türkçe)</option>
+              <option value="nl-NL">🇳🇱 Dutch (Nederlands)</option>
+              <option value="vi-VN">🇻🇳 Vietnamese (Tiếng Việt)</option>
+              <option value="th-TH">🇹🇭 Thai (ไทย)</option>
+              <option value="id-ID">🇮🇩 Indonesian (Bahasa Indonesia)</option>
+              <option value="uk-UA">🇺🇦 Ukrainian (Українська)</option>
+              <option value="pl-PL">🇵🇱 Polish (Polski)</option>
+            </select>
+          </div>
+        </div>
+
+        <button class="swap-btn" id="swapLangBtn" title="Swap Languages">⇄</button>
+
+        <!-- Target Meeting Language (Participants Hear) -->
+        <div class="select-group">
+          <label for="targetLanguageSelect">Meeting Language (They Hear)</label>
+          <div class="select-wrapper">
+            <select id="targetLanguageSelect">
+              <option value="en-US" selected>🇺🇸 English (US)</option>
+              <option value="de-DE">🇩🇪 German (Deutsch)</option>
+              <option value="ru-RU">🇷🇺 Russian (Русский)</option>
+              <option value="ne-NP">🇳🇵 Nepali (नेपाली)</option>
+              <option value="hi-IN">🇮🇳 Hindi (हिन्दी)</option>
+              <option value="es-ES">🇪🇸 Spanish (Español)</option>
+              <option value="fr-FR">🇫🇷 French (Français)</option>
+              <option value="it-IT">🇮🇹 Italian (Italiano)</option>
+              <option value="pt-PT">🇵🇹 Portuguese (Português)</option>
+              <option value="ja-JP">🇯🇵 Japanese (日本語)</option>
+              <option value="ko-KR">🇰🇷 Korean (한국어)</option>
+              <option value="zh-CN">🇨🇳 Mandarin (中文)</option>
+              <option value="ar-SA">🇸🇦 Arabic (العربية)</option>
+              <option value="bn-IN">🇧🇩 Bengali (বাংলা)</option>
+              <option value="ta-IN">🇮🇳 Tamil (தமிழ்)</option>
+              <option value="te-IN">🇮🇳 Telugu (తెలుగు)</option>
+              <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+              <option value="gu-IN">🇮🇳 Gujarati (ગુજરાતી)</option>
+              <option value="pa-IN">🇮🇳 Punjabi (ਪੰਜਾਬੀ)</option>
+              <option value="tr-TR">🇹🇷 Turkish (Türkçe)</option>
+              <option value="nl-NL">🇳🇱 Dutch (Nederlands)</option>
+              <option value="vi-VN">🇻🇳 Vietnamese (Tiếng Việt)</option>
+              <option value="th-TH">🇹🇭 Thai (ไทย)</option>
+              <option value="id-ID">🇮🇩 Indonesian (Bahasa Indonesia)</option>
+              <option value="uk-UA">🇺🇦 Ukrainian (Українська)</option>
+              <option value="pl-PL">🇵🇱 Polish (Polski)</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Audio Routing Controls -->
+      <div class="select-group" style="min-width: 260px;">
+        <label for="audioOutputSelect">🔊 Outbound Audio Device (Google Meet Mic)</label>
+        <div class="select-wrapper">
+          <select id="audioOutputSelect">
+            <option value="default">Default System Audio Output</option>
+            <option value="vb-cable">CABLE Input (VB-Audio Virtual Cable)</option>
+          </select>
+        </div>
+        <label style="font-size: 0.78rem; color: #a5b4fc; margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+          <input type="checkbox" id="alsoHearHeadphonesCheckbox" checked style="accent-color: #8b5cf6;">
+          🎧 Also play English voice in my headphones
+        </label>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button id="toggleLiveBtn" class="btn btn-primary">
+          <span id="btnIcon">▶</span> <span id="btnText">Start Live Mic Translator</span>
+        </button>
+        <button id="guideBtn" class="btn btn-secondary">
+          ⚙️ Setup Guide
+        </button>
+      </div>
+    </section>
+
+    <!-- Split Streams Grid -->
+    <section class="streams-grid">
+
+      <!-- Outbound Stream Card: You -> Meeting -->
+      <article class="stream-card outbound">
+        <div class="stream-header">
+          <div class="stream-title">
+            <div class="stream-title-icon">🎤</div>
+            <div>
+              <span>Outbound Channel (YOUR Voice)</span>
+              <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">You speak Hindi ➔ Sent to Meeting in English</div>
+            </div>
+          </div>
+          <span class="channel-tag" id="outboundTag">Hindi ➔ English</span>
+        </div>
+
+        <!-- Live Waveform Visualizer -->
+        <div class="visualizer-box">
+          <canvas id="outboundCanvas"></canvas>
+        </div>
+
+        <!-- Live Voice / Text Input Box -->
+        <div class="transcript-container">
+          <div class="transcript-box">
+            <div class="transcript-label">
+              <span>Your Spoken Voice / Text Input</span>
+              <span id="outboundSourceLangLabel">Hindi</span>
+            </div>
+            
+            <div style="display: flex; gap: 0.6rem; margin-top: 0.4rem;">
+              <input type="text" id="manualTextInput" placeholder="Type or speak in Hindi (e.g. मेरा नाम राजेश है)..." 
+                style="flex: 1; padding: 0.8rem 1.1rem; border-radius: 12px; background: rgba(7,9,19,0.9); border: 1px solid var(--glass-border); color: #fff; font-family: var(--font-main); font-size: 1rem;">
+              <button id="translateNowBtn" class="btn btn-primary" style="padding: 0.7rem 1.4rem; font-size: 0.9rem;">
+                Translate & Speak 🔊
+              </button>
+            </div>
+
+            <div class="transcript-text" id="outboundOriginalText" style="margin-top: 0.6rem;">
+              <span class="placeholder">Click "Start Live Mic Translator" and speak into your mic, or type above and click Translate!</span>
+            </div>
+          </div>
+
+          <div class="transcript-box">
+            <div class="transcript-label">
+              <span>Translated Speech Output (Piped to Meeting Mic)</span>
+              <span id="outboundTargetLangLabel">English</span>
+            </div>
+
+            <!-- Dual Audio Action Buttons -->
+            <div class="audio-action-bar" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; align-items: center;">
+              <button class="listen-audio-btn local-preview-btn" id="playOutboundLocalAudioBtn" title="Play through your headphones to hear translated English voice">
+                🎧 Hear English in Headphones
+              </button>
+              <button class="listen-audio-btn mic-pipe-btn" id="playOutboundAudioBtn" title="Pipe audio into Google Meet Virtual Mic">
+                📡 Pipe to Meeting Mic
+              </button>
+            </div>
+
+            <!-- Live Transmission Status Banner -->
+            <div id="outboundAudioStatus" class="transmission-status-banner" style="display: none;">
+              <span class="status-pulse"></span>
+              <span id="outboundStatusText">🟢 Transmitting English Audio to Google Meet Mic...</span>
+            </div>
+
+            <div class="transcript-text translated" id="outboundTranslatedText" style="margin-top: 0.6rem;">
+              <span class="placeholder">Translated voice output will stream to Google Meet / Teams here...</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- Inbound Stream Card: Meeting -> You -->
+      <article class="stream-card inbound">
+        <div class="stream-header">
+          <div class="stream-title">
+            <div class="stream-title-icon">🎧</div>
+            <div>
+              <span>Inbound Channel (OTHER MEMBERS' Voice)</span>
+              <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 500;">Meeting speaks English ➔ Played to You in Hindi</div>
+            </div>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <button id="captureTabAudioBtn" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem; border-radius: 8px;">
+              📡 Capture Tab Audio
+            </button>
+            <span class="channel-tag" id="inboundTag">English ➔ Hindi</span>
+          </div>
+        </div>
+
+        <!-- Live Waveform Visualizer -->
+        <div class="visualizer-box">
+          <canvas id="inboundCanvas"></canvas>
+        </div>
+
+        <!-- Transcript Feed -->
+        <div class="transcript-container">
+          <div class="transcript-box">
+            <div class="transcript-label">
+              <span>Incoming Meeting Speech</span>
+              <span id="inboundSourceLangLabel">English / German / Russian</span>
+            </div>
+
+            <!-- Inbound Simulator Input Box -->
+            <div style="display: flex; gap: 0.6rem; margin-top: 0.4rem;">
+              <input type="text" id="inboundTextInput" placeholder="Simulate interviewer speech (e.g. Tell me about yourself)..." 
+                style="flex: 1; padding: 0.8rem 1.1rem; border-radius: 12px; background: rgba(7,9,19,0.9); border: 1px solid var(--glass-border); color: #fff; font-family: var(--font-main); font-size: 1rem;">
+              <button id="translateInboundBtn" class="btn btn-secondary" style="padding: 0.7rem 1.4rem; font-size: 0.9rem;">
+                Simulate Question 🎧
+              </button>
+            </div>
+
+            <div class="transcript-text" id="inboundOriginalText" style="margin-top: 0.6rem;">
+              <span class="placeholder">Listening for incoming meeting speech...</span>
+            </div>
+          </div>
+
+          <div class="transcript-box">
+            <div class="transcript-label">
+              <span>Real-Time Subtitles & Audio</span>
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span id="inboundTargetLangLabel">Hindi</span>
+                <button class="listen-audio-btn local-preview-btn" id="playInboundAudioBtn" title="Play Hindi translated voice in your headphones">
+                  🎧 Hear Hindi Voice
+                </button>
+              </div>
+            </div>
+
+            <!-- Inbound Transmission Status Banner -->
+            <div id="inboundAudioStatus" class="transmission-status-banner" style="display: none; background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.35); color: #22d3ee;">
+              <span class="status-pulse" style="background: #06b6d4; box-shadow: 0 0 10px #06b6d4;"></span>
+              <span id="inboundStatusText">🎧 Playing Hindi Voice into Headphones...</span>
+            </div>
+
+            <div class="transcript-text translated" id="inboundTranslatedText" style="margin-top: 0.6rem;">
+              <span class="placeholder">Live translated audio and subtitles for your ears...</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- Instant Speech Translation Test Presets -->
+    <section class="control-bar" style="flex-direction: column; align-items: flex-start; gap: 1.2rem;">
+      <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+        <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff;">⚡ Instant Live Voice Translation Presets</h3>
+        <span style="font-size: 0.85rem; color: var(--text-secondary);">Click any button below to translate and hear real-time spoken audio instantly!</span>
+      </div>
+
+      <div style="display: flex; gap: 0.8rem; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="runPreset('hi-IN', 'en-US', 'मेरा नाम राजेश है और मैं सॉफ्टवेयर डेवलपर हूँ', 'outbound')">
+          🇮🇳➔🇺🇸 Hindi Outbound: "मेरा नाम राजेश है..."
+        </button>
+        <button class="btn btn-secondary" onclick="runPreset('en-US', 'hi-IN', 'Welcome to the interview. Could you tell us about your background?', 'inbound')">
+          🇺🇸➔🇮🇳 English Inbound: "Welcome to interview..."
+        </button>
+        <button class="btn btn-secondary" onclick="runPreset('hi-IN', 'de-DE', 'नमस्ते! मैं जर्मन कंपनी के साथ काम करना चाहता हूँ', 'outbound')">
+          🇮🇳➔🇩🇪 Hindi Outbound: "जर्मन कंपनी..."
+        </button>
+        <button class="btn btn-secondary" onclick="runPreset('ru-RU', 'hi-IN', 'Здравствуйте! Мы впечатлены вашим опытом.', 'inbound')">
+          🇷🇺➔🇮🇳 Russian Inbound: "Здравствуйте! (Hello!)..."
+        </button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Laptop Setup Wizard Modal -->
+  <div class="modal-overlay" id="setupModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">💻 How Google Meet Translation Works on Your Laptop</h3>
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+      </div>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <div class="step-num">1</div>
+          <div>
+            <strong>Outbound Channel (Left Card) = YOUR Voice</strong>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.3rem; line-height: 1.4;">
+              When you speak in Hindi, your voice wave shows in the left card. It gets translated to English and sent to Google Meet!
+            </p>
+          </div>
+        </div>
+
+        <div class="step-item">
+          <div class="step-num">2</div>
+          <div>
+            <strong>Inbound Channel (Right Card) = OTHER MEMBERS' Voice</strong>
+            <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 0.3rem; line-height: 1.4;">
+              When another meeting member speaks English/Russian, their voice wave shows in the right card, and gets translated into Hindi for your ears!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
+        <button class="btn btn-primary" id="confirmWizardBtn">Got it, Let's Start!</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>OmniVoice AI &copy; 2026 — Universal Speech-to-Speech Real-Time Meeting Translator</p>
+  </footer>
+
+  <!-- Hidden Picture-in-Picture Canvas & Video for Floating Subtitle Window -->
+  <canvas id="pipCanvas" width="600" height="160" style="display: none;"></canvas>
+  <video id="pipVideo" autoplay muted style="display: none;"></video>
+
+  <!-- Scripts -->
+  <script src="app.js"></script>
+</body>
+</html>

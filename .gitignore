@@ -1,0 +1,21 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Temporary audio files
+*.mp3
+*.wav
+temp*
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# IDE metadata
+.vscode/
+.idea/
