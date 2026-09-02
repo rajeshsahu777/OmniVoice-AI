@@ -25,6 +25,35 @@ document.addEventListener('DOMContentLoaded', () => {
   const inboundAudioStatus = document.getElementById('inboundAudioStatus');
   const inboundStatusText = document.getElementById('inboundStatusText');
 
+  // New Productivity Buttons & Elements
+  const exportNotesBtn = document.getElementById('exportNotesBtn');
+  const clearTranscriptsBtn = document.getElementById('clearTranscriptsBtn');
+  const copyOutboundOrigBtn = document.getElementById('copyOutboundOrigBtn');
+  const copyOutboundTransBtn = document.getElementById('copyOutboundTransBtn');
+  const copyInboundOrigBtn = document.getElementById('copyInboundOrigBtn');
+  const copyInboundTransBtn = document.getElementById('copyInboundTransBtn');
+  const toastNotification = document.getElementById('toastNotification');
+
+  // Floating Picture-in-Picture (PiP) Subtitle Elements
+  const togglePipBtn = document.getElementById('togglePipBtn');
+  const pipCanvas = document.getElementById('pipCanvas');
+  const pipVideo = document.getElementById('pipVideo');
+  const pipCtx = pipCanvas ? pipCanvas.getContext('2d') : null;
+
+  // Session Transcript History Log
+  const sessionTranscriptHistory = [];
+
+  // Toast Notification System
+  function showToast(message, duration = 2500) {
+    if (!toastNotification) return;
+    toastNotification.innerHTML = message;
+    toastNotification.style.display = 'flex';
+    clearTimeout(toastNotification._timer);
+    toastNotification._timer = setTimeout(() => {
+      toastNotification.style.display = 'none';
+    }, duration);
+  }
+
   // Helper for displaying live audio transmission status
   function showTransmissionStatus(channel, isActive, message = '') {
     if (channel === 'outbound') {
@@ -311,6 +340,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const activeText = finalTranscript || interimTranscript;
       if (activeText.trim().length > 0) {
         outboundOriginalText.textContent = activeText;
+        updatePiPSubtitles(activeText, lastInboundTranslatedText);
       }
 
       // Smooth translation trigger: translate complete final sentences, or debounce interim speech by 700ms
@@ -403,6 +433,15 @@ document.addEventListener('DOMContentLoaded', () => {
       lastOutboundTranslatedText = translatedResult;
       outboundTranslatedText.textContent = translatedResult;
       speakText(translatedResult, tgtVal, 'outbound');
+      updatePiPSubtitles(translatedResult, lastInboundTranslatedText);
+
+      sessionTranscriptHistory.push({
+        time: new Date().toLocaleTimeString(),
+        speaker: 'You (Outbound)',
+        original: text,
+        translated: translatedResult,
+        pair: `${LANG_NAMES[srcVal] || srcVal} ➔ ${LANG_NAMES[tgtVal] || tgtVal}`
+      });
       
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -416,6 +455,15 @@ document.addEventListener('DOMContentLoaded', () => {
       lastInboundTranslatedText = translatedResult;
       inboundTranslatedText.textContent = translatedResult;
       speakText(translatedResult, tgtVal, 'inbound');
+      updatePiPSubtitles(lastOutboundTranslatedText, translatedResult);
+
+      sessionTranscriptHistory.push({
+        time: new Date().toLocaleTimeString(),
+        speaker: 'Meeting (Inbound)',
+        original: text,
+        translated: translatedResult,
+        pair: `${LANG_NAMES[srcVal] || srcVal} ➔ ${LANG_NAMES[tgtVal] || tgtVal}`
+      });
     }
   }
 
@@ -535,6 +583,121 @@ document.addEventListener('DOMContentLoaded', () => {
         // If empty, play a quick test sample in Hindi
         speakText('नमस्ते! यह आपके इनबाउंड ट्रांसलेशन की आवाज़ का टेस्ट है।', myLanguageSelect.value, 'inbound', true);
       }
+    });
+  }
+
+  // Copy to Clipboard Utility
+  function copyTextToClipboard(element, label) {
+    if (!element) return;
+    const text = element.textContent.trim();
+    if (!text || text.includes('Click "Start Live Mic Translator"') || text.includes('Listening for') || text.includes('Translated voice output will stream') || text.includes('Live translated audio')) {
+      showToast('⚠️ No text to copy yet', 2000);
+      return;
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      showToast(`📋 Copied ${label} to clipboard!`, 2200);
+    }).catch(err => {
+      showToast('❌ Copy failed: ' + err.message, 2500);
+    });
+  }
+
+  if (copyOutboundOrigBtn) {
+    copyOutboundOrigBtn.addEventListener('click', () => copyTextToClipboard(outboundOriginalText, 'your input speech'));
+  }
+  if (copyOutboundTransBtn) {
+    copyOutboundTransBtn.addEventListener('click', () => copyTextToClipboard(outboundTranslatedText, 'translated speech'));
+  }
+  if (copyInboundOrigBtn) {
+    copyInboundOrigBtn.addEventListener('click', () => copyTextToClipboard(inboundOriginalText, 'incoming meeting speech'));
+  }
+  if (copyInboundTransBtn) {
+    copyInboundTransBtn.addEventListener('click', () => copyTextToClipboard(inboundTranslatedText, 'meeting subtitles'));
+  }
+
+  // Clear Transcripts & Session Log Handler
+  if (clearTranscriptsBtn) {
+    clearTranscriptsBtn.addEventListener('click', () => {
+      outboundOriginalText.innerHTML = '<span class="placeholder">Click "Start Live Mic Translator" and speak into your mic, or type above and click Translate!</span>';
+      outboundTranslatedText.innerHTML = '<span class="placeholder">Translated voice output will stream to Google Meet / Teams here...</span>';
+      inboundOriginalText.innerHTML = '<span class="placeholder">Listening for incoming meeting speech...</span>';
+      inboundTranslatedText.innerHTML = '<span class="placeholder">Live translated audio and subtitles for your ears...</span>';
+      manualTextInput.value = '';
+      if (inboundTextInput) inboundTextInput.value = '';
+      lastOutboundTranslatedText = '';
+      lastInboundTranslatedText = '';
+      sessionTranscriptHistory.length = 0;
+      updatePiPSubtitles();
+      showToast('🧹 Transcripts and session log cleared', 2500);
+    });
+  }
+
+  // Export Meeting Notes / Transcript Handler
+  if (exportNotesBtn) {
+    exportNotesBtn.addEventListener('click', () => {
+      if (sessionTranscriptHistory.length === 0) {
+        const outOrig = outboundOriginalText.textContent.trim();
+        const outTrans = outboundTranslatedText.textContent.trim();
+        const inOrig = inboundOriginalText.textContent.trim();
+        const inTrans = inboundTranslatedText.textContent.trim();
+
+        const hasOut = outOrig && !outOrig.includes('Click "Start Live Mic') && !outOrig.includes('Translator stopped');
+        const hasIn = inOrig && !inOrig.includes('Listening for');
+
+        if (!hasOut && !hasIn) {
+          showToast('⚠️ No meeting notes to export yet. Translate or speak first!', 3000);
+          return;
+        }
+
+        if (hasOut) {
+          sessionTranscriptHistory.push({
+            time: new Date().toLocaleTimeString(),
+            speaker: 'You (Outbound)',
+            original: outOrig,
+            translated: outTrans,
+            pair: `${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value} ➔ ${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value}`
+          });
+        }
+        if (hasIn) {
+          sessionTranscriptHistory.push({
+            time: new Date().toLocaleTimeString(),
+            speaker: 'Meeting (Inbound)',
+            original: inOrig,
+            translated: inTrans,
+            pair: `${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value} ➔ ${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value}`
+          });
+        }
+      }
+
+      const dateStr = new Date().toISOString().split('T')[0];
+      let content = `========================================================\r\n`;
+      content += `  OMNIVOICE AI - MEETING TRANSCRIPT & TRANSLATION NOTES  \r\n`;
+      content += `========================================================\r\n`;
+      content += `Date: ${new Date().toLocaleString()}\r\n`;
+      content += `Languages: ${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value} <==> ${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value}\r\n`;
+      content += `Platform: ${document.getElementById('meetStatus')?.textContent || 'Google Meet'}\r\n`;
+      content += `Total Entries: ${sessionTranscriptHistory.length}\r\n`;
+      content += `========================================================\r\n\r\n`;
+
+      sessionTranscriptHistory.forEach((item, idx) => {
+        content += `[#${idx + 1} | ${item.time}] ${item.speaker} (${item.pair})\r\n`;
+        content += `  Original:   "${item.original}"\r\n`;
+        content += `  Translated: "${item.translated}"\r\n\r\n`;
+      });
+
+      content += `========================================================\r\n`;
+      content += `Generated with OmniVoice AI (https://github.com/rajeshsahu777/OmniVoice-AI)\r\n`;
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `OmniVoice_Meeting_Notes_${dateStr}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('📥 Meeting transcript exported to .txt!', 3000);
     });
   }
 
@@ -725,10 +888,6 @@ document.addEventListener('DOMContentLoaded', () => {
   confirmWizardBtn.addEventListener('click', closeModal);
 
   // Floating Picture-in-Picture (PiP) Subtitle Overlay Logic
-  const togglePipBtn = document.getElementById('togglePipBtn');
-  const pipCanvas = document.getElementById('pipCanvas');
-  const pipVideo = document.getElementById('pipVideo');
-  let pipCtx = pipCanvas ? pipCanvas.getContext('2d') : null;
 
   function updatePiPSubtitles(outboundText = '', inboundText = '') {
     if (!pipCtx) return;

@@ -1,0 +1,6 @@
+# OmniVoice AI - Python Virtual Audio Agent Dependencies
+SpeechRecognition>=3.10.0
+PyAudio>=0.2.14
+gTTS>=2.5.1
+requests>=2.31.0
+pygame>=2.5.2

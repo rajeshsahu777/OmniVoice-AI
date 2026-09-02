@@ -1,5 +1,5 @@
 """
-LinguaBridge AI - Universal Python Desktop Virtual Microphone Bridge & Agent
+OmniVoice AI - Universal Python Desktop Virtual Microphone Bridge & Agent
 -----------------------------------------------------------------------------
 This script enables direct OS-level virtual microphone piping for Google Meet,
 Microsoft Teams, and Zoom meetings on Windows & macOS supporting ALL global languages.
@@ -122,7 +122,7 @@ def main():
     speech_lang_code = LANG_CODES.get(source_lang, f"{source_lang}-{source_lang.upper()}")
 
     print("==================================================")
-    print(" LinguaBridge AI - Universal Desktop Agent")
+    print(" OmniVoice AI - Universal Desktop Agent")
     print("==================================================")
     print(f" Listening Language: {source_lang.upper()} ({speech_lang_code})")
     print(f" Output Meeting Language: {target_lang.upper()}")
@@ -170,7 +170,7 @@ def main():
             speech_text = recognizer.recognize_google(audio, language=speech_lang_code)
             print(f"You Said ({source_lang.upper()}): {speech_text}")
 
-            # Send to LinguaBridge AI Translation API
+            # Send to OmniVoice AI Translation API
             print("Translating...")
             try:
                 response = requests.post(SERVER_URL, json={
@@ -205,7 +205,7 @@ def main():
         except sr.RequestError as e:
             print(f"[Error] Speech Recognition service error: {e}")
         except KeyboardInterrupt:
-            print("\nStopping LinguaBridge AI Agent...")
+            print("\nStopping OmniVoice AI Agent...")
             break
         except Exception as ex:
             print(f"[Error]: {ex}")
