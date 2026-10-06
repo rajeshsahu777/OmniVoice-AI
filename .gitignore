@@ -19,3 +19,9 @@ Thumbs.db
 # IDE metadata
 .vscode/
 .idea/
+
+# Distribution & Compiled Binaries
+dist/
+build/
+*.exe
+*.zip
