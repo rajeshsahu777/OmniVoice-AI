@@ -7,6 +7,7 @@
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-4A154B?style=for-the-badge)](https://github.com/rajeshsahu777/OmniVoice-AI)
 [![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-brightgreen.svg?style=for-the-badge)](https://github.com/rajeshsahu777/OmniVoice-AI/pulls)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/rajeshsahu777/OmniVoice-AI)
 
 **Universal Bidirectional Speech-to-Speech AI Meeting Translator for Google Meet, Zoom, Microsoft Teams, Discord, and WhatsApp Web with Floating Subtitles.**
 
@@ -147,7 +148,38 @@ To pipe translated AI voice directly into Google Meet or Zoom as your microphone
 
 ---
 
-### Step 4 (Optional): Python Desktop Virtual Audio Agent
+### Step 4: Run as Native Desktop App (Electron)
+
+To launch OmniVoice AI as a native desktop application with a standalone window frame:
+
+```bash
+# Launch Native Desktop App
+npm run desktop
+```
+
+Or on Windows, simply double-click **`start_desktop_app.bat`**!
+
+---
+
+### Step 5: Containerized Cloud Deployment (Docker & Render)
+
+#### Option A: 1-Click Deploy on Render
+Click the **Deploy to Render** badge at the top of the repository or link your GitHub repo directly to [Render](https://render.com). It will automatically read `render.yaml`, configure WebSockets, and provision a free HTTPS web service.
+
+#### Option B: Self-Host via Docker
+```bash
+# Build the production Docker image
+docker build -t omnivoice-ai .
+
+# Run the container
+docker run -d -p 3000:3000 --name omnivoice-ai omnivoice-ai
+```
+
+Access the dashboard at `http://localhost:3000`.
+
+---
+
+### Step 6 (Optional): Python Desktop Virtual Audio Agent
 
 If you prefer running the audio bridge as a background OS process:
 
@@ -161,9 +193,10 @@ python desktop_agent.py hi en
 
 Usage examples:
 ```bash
-python desktop_agent.py hi en      # Hindi -> English
-python desktop_agent.py hi de 2    # Hindi -> German on Device #2
-python desktop_agent.py en hi      # English -> Hindi Inbound
+python desktop_agent.py hi en          # Hindi -> English
+python desktop_agent.py hi de 2        # Hindi -> German on Device #2
+python desktop_agent.py --test         # Run end-to-end audio diagnostic test
+python desktop_agent.py --list-devices # List system audio devices
 ```
 
 ---

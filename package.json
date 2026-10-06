@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "test": "node test.js",
+    "desktop": "electron electron-main.js",
     "agent": "python desktop_agent.py"
   },
   "keywords": [
@@ -24,5 +25,8 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "ws": "^8.17.0"
+  },
+  "devDependencies": {
+    "electron": "^44.5.1"
   }
 }
