@@ -156,7 +156,7 @@
 
       </div>
 
-      <!-- Audio Routing Controls -->
+      <!-- Audio Routing & Meeting Tuning Controls -->
       <div class="select-group" style="min-width: 260px;">
         <label for="audioOutputSelect">🔊 Outbound Audio Device (Google Meet Mic)</label>
         <div class="select-wrapper">
@@ -165,26 +165,81 @@
             <option value="vb-cable">CABLE Input (VB-Audio Virtual Cable)</option>
           </select>
         </div>
-        <label style="font-size: 0.78rem; color: #a5b4fc; margin-top: 0.4rem; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
-          <input type="checkbox" id="alsoHearHeadphonesCheckbox" checked style="accent-color: #8b5cf6;">
-          🎧 Also play English voice in my headphones
-        </label>
+        <div style="display: flex; gap: 0.8rem; margin-top: 0.5rem; flex-wrap: wrap;">
+          <label style="font-size: 0.78rem; color: #a5b4fc; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" id="alsoHearHeadphonesCheckbox" checked style="accent-color: #8b5cf6;">
+            🎧 Hear in headphones
+          </label>
+          <label style="font-size: 0.78rem; color: #a5b4fc; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" id="chimeToggleCheckbox" checked style="accent-color: #8b5cf6;">
+            🔔 Sound chime
+          </label>
+          <label style="font-size: 0.78rem; color: #a5b4fc; display: flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+            <input type="checkbox" id="pttModeCheckbox" style="accent-color: #8b5cf6;">
+            🔘 Push-To-Talk (Space)
+          </label>
+        </div>
+      </div>
+
+      <!-- Voice Pace & Rate Selector -->
+      <div class="select-group" style="min-width: 140px;">
+        <label for="voiceSpeedSelect">⚡ Voice Speed</label>
+        <div class="select-wrapper">
+          <select id="voiceSpeedSelect">
+            <option value="0.85">0.85x Relaxed</option>
+            <option value="1.0" selected>1.0x Normal</option>
+            <option value="1.15">1.15x Conversational</option>
+            <option value="1.3">1.3x Rapid</option>
+          </select>
+        </div>
       </div>
 
       <!-- Action Buttons -->
-      <div class="actions">
+      <div class="actions" style="display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;">
         <button id="toggleLiveBtn" class="btn btn-primary">
           <span id="btnIcon">▶</span> <span id="btnText">Start Live Mic Translator</span>
         </button>
-        <button id="exportNotesBtn" class="btn btn-secondary" title="Export timestamped meeting transcript notes to file">
-          📥 Export Notes
+        <button id="toggleMuteBtn" class="btn btn-secondary" title="Mute or Unmute live microphone capture (Ctrl+M)">
+          <span id="muteIcon">🎙️</span> <span id="muteText">Mic Live</span>
         </button>
+        <button id="generateSummaryBtn" class="btn btn-secondary" title="Generate AI meeting minutes and action items" style="background: linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3)); border-color: rgba(168,85,247,0.5);">
+          ✨ AI Summary
+        </button>
+        
+        <!-- Multi-Format Export Dropdown Menu -->
+        <div class="export-dropdown-wrapper" style="position: relative;">
+          <button id="exportNotesBtn" class="btn btn-secondary" title="Export meeting transcripts in multiple formats">
+            📥 Export Notes ▾
+          </button>
+          <div class="export-menu" id="exportMenu" style="display: none; position: absolute; top: calc(100% + 5px); right: 0; background: rgba(15,23,42,0.95); border: 1px solid var(--glass-border); border-radius: 10px; padding: 0.4rem; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 50; min-width: 170px;">
+            <button class="export-option-btn" data-format="md">📄 Markdown (.md)</button>
+            <button class="export-option-btn" data-format="srt">🎬 Subtitles (.srt)</button>
+            <button class="export-option-btn" data-format="txt">📝 Plain Text (.txt)</button>
+            <button class="export-option-btn" data-format="json">📊 JSON (.json)</button>
+          </div>
+        </div>
+
         <button id="clearTranscriptsBtn" class="btn btn-secondary" title="Clear current transcript cards">
           🧹 Clear
         </button>
         <button id="guideBtn" class="btn btn-secondary">
           ⚙️ Setup Guide
         </button>
+      </div>
+    </section>
+
+    <!-- Real-Time Search & Keyboard Shortcut Guide Bar -->
+    <section class="platform-bar" style="margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(15, 23, 42, 0.45); padding: 0.6rem 1.2rem; border-radius: 12px; border: 1px solid var(--glass-border);">
+      <div style="display: flex; align-items: center; gap: 0.6rem; flex: 1;">
+        <span style="font-size: 0.85rem; color: #94a3b8;">🔍 Search Transcript:</span>
+        <input type="text" id="transcriptSearchInput" placeholder="Filter spoken meeting words..." 
+          style="flex: 1; max-width: 280px; padding: 0.35rem 0.8rem; border-radius: 8px; background: rgba(7,9,19,0.8); border: 1px solid var(--glass-border); color: #fff; font-size: 0.82rem;">
+      </div>
+      <div style="display: flex; gap: 0.6rem; font-size: 0.78rem; color: #94a3b8; flex-wrap: wrap;">
+        <span class="shortcut-chip"><kbd>Space</kbd> PTT Hold</span>
+        <span class="shortcut-chip"><kbd>Ctrl+M</kbd> Mute</span>
+        <span class="shortcut-chip"><kbd>Ctrl+Shift+P</kbd> PiP Float</span>
+        <span class="shortcut-chip"><kbd>Ctrl+Shift+E</kbd> Export</span>
       </div>
     </section>
 
@@ -397,6 +452,26 @@
 
       <div style="display: flex; justify-content: flex-end; margin-top: 1rem;">
         <button class="btn btn-primary" id="confirmWizardBtn">Got it, Let's Start!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Meeting Summary Modal -->
+  <div class="modal-overlay" id="summaryModal">
+    <div class="modal-card" style="max-width: 680px;">
+      <div class="modal-header">
+        <h3 class="modal-title">✨ AI Meeting Summary & Action Items</h3>
+        <button class="close-btn" id="closeSummaryModalBtn">&times;</button>
+      </div>
+      <div style="background: rgba(7,9,19,0.85); border: 1px solid var(--glass-border); border-radius: 12px; padding: 1.2rem; max-height: 380px; overflow-y: auto; margin: 1rem 0; font-size: 0.92rem; line-height: 1.6; color: #e2e8f0; white-space: pre-wrap;" id="summaryContentArea">
+Generating summary from live meeting transcript...
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; margin-top: 1rem; flex-wrap: wrap;">
+        <span style="font-size: 0.8rem; color: #94a3b8;" id="summaryMetaText">Extracted from current session history</span>
+        <div style="display: flex; gap: 0.6rem;">
+          <button class="btn btn-secondary" id="copySummaryBtn">📋 Copy Summary</button>
+          <button class="btn btn-primary" id="downloadSummaryBtn">📥 Download (.md)</button>
+        </div>
       </div>
     </div>
   </div>

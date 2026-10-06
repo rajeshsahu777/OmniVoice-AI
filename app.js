@@ -25,8 +25,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const inboundAudioStatus = document.getElementById('inboundAudioStatus');
   const inboundStatusText = document.getElementById('inboundStatusText');
 
-  // New Productivity Buttons & Elements
+  // Meeting Control & Tuning Elements
+  const toggleMuteBtn = document.getElementById('toggleMuteBtn');
+  const muteIcon = document.getElementById('muteIcon');
+  const muteText = document.getElementById('muteText');
+  const pttModeCheckbox = document.getElementById('pttModeCheckbox');
+  const voiceSpeedSelect = document.getElementById('voiceSpeedSelect');
+  const chimeToggleCheckbox = document.getElementById('chimeToggleCheckbox');
+  const transcriptSearchInput = document.getElementById('transcriptSearchInput');
+
+  // AI Meeting Minutes & Summary Modal Elements
+  const generateSummaryBtn = document.getElementById('generateSummaryBtn');
+  const summaryModal = document.getElementById('summaryModal');
+  const closeSummaryModalBtn = document.getElementById('closeSummaryModalBtn');
+  const summaryContentArea = document.getElementById('summaryContentArea');
+  const copySummaryBtn = document.getElementById('copySummaryBtn');
+  const downloadSummaryBtn = document.getElementById('downloadSummaryBtn');
+  const summaryMetaText = document.getElementById('summaryMetaText');
+
+  // Multi-Format Export Elements
   const exportNotesBtn = document.getElementById('exportNotesBtn');
+  const exportMenu = document.getElementById('exportMenu');
+  const exportOptionBtns = document.querySelectorAll('.export-option-btn');
+
+  // Productivity Buttons & Elements
   const clearTranscriptsBtn = document.getElementById('clearTranscriptsBtn');
   const copyOutboundOrigBtn = document.getElementById('copyOutboundOrigBtn');
   const copyOutboundTransBtn = document.getElementById('copyOutboundTransBtn');
@@ -42,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Session Transcript History Log
   const sessionTranscriptHistory = [];
+  let isMuted = false;
 
   // Toast Notification System
   function showToast(message, duration = 2500) {
@@ -321,8 +344,8 @@ document.addEventListener('DOMContentLoaded', () => {
     rec.interimResults = true;
 
     rec.onresult = (event) => {
-      // ANTI-ECHO GUARD: Ignore mic input while TTS audio is playing through speakers!
-      if (isSpeakingTTS) {
+      // ANTI-ECHO GUARD & MUTE GUARD: Ignore mic input while TTS is playing or when muted
+      if (isSpeakingTTS || isMuted) {
         return;
       }
 
@@ -467,6 +490,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
+  // Subtle audio cue feedback on successful transmission
+  function playTransmissionChime() {
+    if (!chimeToggleCheckbox || !chimeToggleCheckbox.checked) return;
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      const now = ctx.currentTime;
+      osc.frequency.setValueAtTime(587.33, now); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
+      gain.gain.setValueAtTime(0.06, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      osc.start(now);
+      osc.stop(now + 0.21);
+    } catch (e) {}
+  }
+
   // Reliable Text-to-Speech (TTS) Output Engine with Anti-Echo Lock
   async function speakText(text, langCode, channel = 'outbound', forceDefaultOutput = false) {
     if (!text || !text.trim()) return;
@@ -474,13 +519,17 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lock STT mic during TTS playback to kill speaker feedback echo
     setTTSActive(true);
 
+    const speed = voiceSpeedSelect ? (parseFloat(voiceSpeedSelect.value) || 1.0) : 1.0;
+
     try {
       const audioUrl = `/api/tts?text=${encodeURIComponent(text)}&lang=${encodeURIComponent(langCode)}`;
       const audio = new Audio(audioUrl);
+      audio.playbackRate = speed;
 
       const unlockMic = () => {
         setTTSActive(false);
         showTransmissionStatus(channel, false);
+        playTransmissionChime();
       };
 
       audio.onended = unlockMic;
@@ -508,12 +557,13 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       await audio.play();
-      setTTSActive(true, Math.max(1200, text.length * 80));
+      setTTSActive(true, Math.max(1200, (text.length * 80) / speed));
 
       // ONLY play local preview audio if audio is routed to Virtual Cable AND user explicitly checked headphone preview
       if (isVirtualDevice && alsoHearHeadphonesCheckbox && alsoHearHeadphonesCheckbox.checked) {
         try {
           const previewAudio = new Audio(audioUrl);
+          previewAudio.playbackRate = speed;
           previewAudio.volume = 0.5;
           await previewAudio.play();
         } catch (e) {
@@ -528,10 +578,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = langCode;
-        utterance.rate = 0.95;
+        utterance.rate = speed;
         utterance.pitch = 1.0;
 
-        utterance.onend = () => setTTSActive(false);
+        utterance.onend = () => {
+          setTTSActive(false);
+          playTransmissionChime();
+        };
         utterance.onerror = () => setTTSActive(false);
 
         if (availableVoices.length === 0) {
@@ -544,7 +597,7 @@ document.addEventListener('DOMContentLoaded', () => {
           utterance.voice = matchedVoice;
         }
 
-        setTTSActive(true, Math.max(1200, text.length * 80));
+        setTTSActive(true, Math.max(1200, (text.length * 80) / speed));
         window.speechSynthesis.speak(utterance);
       } else {
         setTTSActive(false);
@@ -631,45 +684,82 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Export Meeting Notes / Transcript Handler
-  if (exportNotesBtn) {
-    exportNotesBtn.addEventListener('click', () => {
-      if (sessionTranscriptHistory.length === 0) {
-        const outOrig = outboundOriginalText.textContent.trim();
-        const outTrans = outboundTranslatedText.textContent.trim();
-        const inOrig = inboundOriginalText.textContent.trim();
-        const inTrans = inboundTranslatedText.textContent.trim();
+  // Multi-Format Meeting Notes Export
+  function exportTranscriptNotes(format = 'txt') {
+    if (sessionTranscriptHistory.length === 0) {
+      const outOrig = outboundOriginalText.textContent.trim();
+      const outTrans = outboundTranslatedText.textContent.trim();
+      const inOrig = inboundOriginalText.textContent.trim();
+      const inTrans = inboundTranslatedText.textContent.trim();
 
-        const hasOut = outOrig && !outOrig.includes('Click "Start Live Mic') && !outOrig.includes('Translator stopped');
-        const hasIn = inOrig && !inOrig.includes('Listening for');
+      const hasOut = outOrig && !outOrig.includes('Click "Start Live Mic') && !outOrig.includes('Translator stopped');
+      const hasIn = inOrig && !inOrig.includes('Listening for');
 
-        if (!hasOut && !hasIn) {
-          showToast('⚠️ No meeting notes to export yet. Translate or speak first!', 3000);
-          return;
-        }
-
-        if (hasOut) {
-          sessionTranscriptHistory.push({
-            time: new Date().toLocaleTimeString(),
-            speaker: 'You (Outbound)',
-            original: outOrig,
-            translated: outTrans,
-            pair: `${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value} ➔ ${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value}`
-          });
-        }
-        if (hasIn) {
-          sessionTranscriptHistory.push({
-            time: new Date().toLocaleTimeString(),
-            speaker: 'Meeting (Inbound)',
-            original: inOrig,
-            translated: inTrans,
-            pair: `${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value} ➔ ${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value}`
-          });
-        }
+      if (!hasOut && !hasIn) {
+        showToast('⚠️ No meeting notes to export yet. Translate or speak first!', 3000);
+        return;
       }
 
-      const dateStr = new Date().toISOString().split('T')[0];
-      let content = `========================================================\r\n`;
+      if (hasOut) {
+        sessionTranscriptHistory.push({
+          time: new Date().toLocaleTimeString(),
+          speaker: 'You (Outbound)',
+          original: outOrig,
+          translated: outTrans,
+          pair: `${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value} ➔ ${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value}`
+        });
+      }
+      if (hasIn) {
+        sessionTranscriptHistory.push({
+          time: new Date().toLocaleTimeString(),
+          speaker: 'Meeting (Inbound)',
+          original: inOrig,
+          translated: inTrans,
+          pair: `${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value} ➔ ${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value}`
+        });
+      }
+    }
+
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filename = `OmniVoice_Meeting_${dateStr}.${format}`;
+    let content = '';
+    let mimeType = 'text/plain;charset=utf-8';
+
+    if (format === 'md') {
+      mimeType = 'text/markdown;charset=utf-8';
+      content = `# 🎙️ OmniVoice AI — Meeting Minutes & Transcript\n\n`;
+      content += `- **Date**: ${new Date().toLocaleString()}\n`;
+      content += `- **Languages**: ${LANG_NAMES[myLanguageSelect.value] || myLanguageSelect.value} ⇄ ${LANG_NAMES[targetLanguageSelect.value] || targetLanguageSelect.value}\n`;
+      content += `- **Platform**: ${document.getElementById('meetStatus')?.textContent || 'Universal Meeting'}\n`;
+      content += `- **Total Exchanged Lines**: ${sessionTranscriptHistory.length}\n\n`;
+      content += `## 📝 Chronological Dialogue Log\n\n`;
+      content += `| Time | Speaker | Language Flow | Original Speech | Translated Speech |\n`;
+      content += `| :--- | :--- | :--- | :--- | :--- |\n`;
+      sessionTranscriptHistory.forEach(item => {
+        content += `| ${item.time} | **${item.speaker}** | \`${item.pair}\` | ${item.original.replace(/\|/g, '\\|')} | ${item.translated.replace(/\|/g, '\\|')} |\n`;
+      });
+      content += `\n---\n*Exported via [OmniVoice AI](https://github.com/rajeshsahu777/OmniVoice-AI)*\n`;
+    } else if (format === 'srt') {
+      sessionTranscriptHistory.forEach((item, idx) => {
+        const startSec = idx * 4;
+        const endSec = startSec + 3;
+        const fmtTime = (s) => {
+          const hh = String(Math.floor(s / 3600)).padStart(2, '0');
+          const mm = String(Math.floor((s % 3600) / 60)).padStart(2, '0');
+          const ss = String(s % 60).padStart(2, '0');
+          return `${hh}:${mm}:${ss},000`;
+        };
+        content += `${idx + 1}\n${fmtTime(startSec)} --> ${fmtTime(endSec)}\n[${item.speaker}] ${item.translated}\n\n`;
+      });
+    } else if (format === 'json') {
+      mimeType = 'application/json;charset=utf-8';
+      content = JSON.stringify({
+        exportDate: new Date().toISOString(),
+        platform: document.getElementById('meetStatus')?.textContent || 'Universal Meeting',
+        entries: sessionTranscriptHistory
+      }, null, 2);
+    } else {
+      content = `========================================================\r\n`;
       content += `  OMNIVOICE AI - MEETING TRANSCRIPT & TRANSLATION NOTES  \r\n`;
       content += `========================================================\r\n`;
       content += `Date: ${new Date().toLocaleString()}\r\n`;
@@ -686,18 +776,219 @@ document.addEventListener('DOMContentLoaded', () => {
 
       content += `========================================================\r\n`;
       content += `Generated with OmniVoice AI (https://github.com/rajeshsahu777/OmniVoice-AI)\r\n`;
+    }
 
-      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(`📥 Exported notes as ${format.toUpperCase()}!`, 2500);
+  }
+
+  // Export Menu Dropdown Toggle
+  if (exportNotesBtn && exportMenu) {
+    exportNotesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exportMenu.style.display = exportMenu.style.display === 'block' ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', () => {
+      if (exportMenu) exportMenu.style.display = 'none';
+    });
+  }
+
+  if (exportOptionBtns) {
+    exportOptionBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const fmt = btn.dataset.format || 'txt';
+        if (exportMenu) exportMenu.style.display = 'none';
+        exportTranscriptNotes(fmt);
+      });
+    });
+  }
+
+  // AI Meeting Minutes & Summary Generator Logic
+  let currentSummaryMarkdown = '';
+  async function generateMeetingSummary() {
+    if (sessionTranscriptHistory.length === 0) {
+      showToast('⚠️ No meeting dialogue yet to summarize. Have a conversation first!', 3000);
+      return;
+    }
+    if (summaryModal) summaryModal.classList.add('open');
+    if (summaryContentArea) summaryContentArea.textContent = '⏳ Analyzing transcript and extracting action items via OmniVoice AI...';
+
+    try {
+      const formattedEntries = sessionTranscriptHistory.map(item => ({
+        channel: item.speaker.includes('Outbound') ? 'outbound' : 'inbound',
+        text: item.original,
+        translated: item.translated
+      }));
+
+      const res = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: formattedEntries })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        currentSummaryMarkdown = data.summary;
+        if (summaryContentArea) summaryContentArea.textContent = data.summary;
+        if (summaryMetaText) summaryMetaText.textContent = `Analyzed ${data.totalEntries} entries at ${new Date().toLocaleTimeString()}`;
+      } else {
+        if (summaryContentArea) summaryContentArea.textContent = 'Could not generate summary from server API.';
+      }
+    } catch (err) {
+      if (summaryContentArea) summaryContentArea.textContent = 'Summary generation error: ' + err.message;
+    }
+  }
+
+  if (generateSummaryBtn) {
+    generateSummaryBtn.addEventListener('click', generateMeetingSummary);
+  }
+
+  if (closeSummaryModalBtn && summaryModal) {
+    closeSummaryModalBtn.addEventListener('click', () => {
+      summaryModal.classList.remove('open');
+    });
+  }
+
+  if (copySummaryBtn) {
+    copySummaryBtn.addEventListener('click', async () => {
+      if (summaryContentArea && summaryContentArea.textContent) {
+        await navigator.clipboard.writeText(summaryContentArea.textContent);
+        showToast('📋 AI Meeting Summary copied to clipboard!', 2500);
+      }
+    });
+  }
+
+  if (downloadSummaryBtn) {
+    downloadSummaryBtn.addEventListener('click', () => {
+      const text = currentSummaryMarkdown || summaryContentArea?.textContent;
+      if (!text) return;
+      const dateStr = new Date().toISOString().split('T')[0];
+      const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `OmniVoice_Meeting_Notes_${dateStr}.txt`;
+      a.download = `OmniVoice_Meeting_Summary_${dateStr}.md`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      showToast('📥 Summary downloaded as .md!', 2500);
+    });
+  }
 
-      showToast('📥 Meeting transcript exported to .txt!', 3000);
+  // Microphone Mute Toggle & Push-To-Talk Logic
+  function setMuteState(muted) {
+    isMuted = muted;
+    if (toggleMuteBtn) {
+      if (isMuted) {
+        toggleMuteBtn.classList.add('muted');
+        if (muteIcon) muteIcon.textContent = '🔴';
+        if (muteText) muteText.textContent = 'Mic Muted';
+        showToast('🔴 Microphone Muted', 1500);
+      } else {
+        toggleMuteBtn.classList.remove('muted');
+        if (muteIcon) muteIcon.textContent = '🎙️';
+        if (muteText) muteText.textContent = 'Mic Live';
+        showToast('🎙️ Microphone Live', 1500);
+      }
+    }
+  }
+
+  if (toggleMuteBtn) {
+    toggleMuteBtn.addEventListener('click', () => {
+      setMuteState(!isMuted);
+    });
+  }
+
+  // Push-to-Talk (Spacebar) handling & Global Shortcuts
+  window.addEventListener('keydown', (e) => {
+    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+    if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+      return;
+    }
+
+    // Spacebar PTT
+    if (e.code === 'Space' && pttModeCheckbox && pttModeCheckbox.checked) {
+      if (isMuted) {
+        setMuteState(false);
+      }
+      e.preventDefault();
+    }
+
+    // Ctrl + M: Toggle Mute
+    if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+      e.preventDefault();
+      setMuteState(!isMuted);
+    }
+
+    // Ctrl + Shift + P: Float PiP Subtitles
+    if (e.ctrlKey && e.shiftKey && (e.key === 'p' || e.key === 'P')) {
+      e.preventDefault();
+      if (togglePipBtn) togglePipBtn.click();
+    }
+
+    // Ctrl + Shift + E: Export Notes
+    if (e.ctrlKey && e.shiftKey && (e.key === 'e' || e.key === 'E')) {
+      e.preventDefault();
+      exportTranscriptNotes('md');
+    }
+  });
+
+  window.addEventListener('keyup', (e) => {
+    const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : '';
+    if (activeTag === 'input' || activeTag === 'textarea' || activeTag === 'select') {
+      return;
+    }
+
+    if (e.code === 'Space' && pttModeCheckbox && pttModeCheckbox.checked) {
+      setMuteState(true);
+      e.preventDefault();
+    }
+  });
+
+  if (pttModeCheckbox) {
+    pttModeCheckbox.addEventListener('change', () => {
+      if (pttModeCheckbox.checked) {
+        setMuteState(true);
+        showToast('🔘 Push-To-Talk active! Hold Spacebar to speak.', 3000);
+      } else {
+        setMuteState(false);
+      }
+    });
+  }
+
+  // Real-Time Transcript Search Filter
+  if (transcriptSearchInput) {
+    transcriptSearchInput.addEventListener('input', () => {
+      const query = transcriptSearchInput.value.trim().toLowerCase();
+      const highlight = (elem) => {
+        if (!elem) return;
+        if (!query) {
+          elem.style.background = '';
+          return;
+        }
+        if (elem.textContent.toLowerCase().includes(query)) {
+          elem.style.background = 'rgba(139, 92, 246, 0.25)';
+          elem.style.borderRadius = '8px';
+        } else {
+          elem.style.background = '';
+        }
+      };
+      highlight(outboundOriginalText);
+      highlight(outboundTranslatedText);
+      highlight(inboundOriginalText);
+      highlight(inboundTranslatedText);
     });
   }
 

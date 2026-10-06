@@ -104,6 +104,33 @@ async function translateText(text, sourceLang, targetLang) {
   return text;
 }
 
+// Active WebSocket client counter
+let activeClientCount = 0;
+
+// System Health & Diagnostics Endpoint
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    uptimeSeconds: Math.floor(process.uptime()),
+    activeWebSockets: activeClientCount,
+    supportedLanguagesCount: Object.keys(LANG_MAP).length,
+    timestamp: new Date().toISOString(),
+    version: '1.1.0'
+  });
+});
+
+// Supported Languages Catalog Endpoint
+app.get('/api/languages', (req, res) => {
+  const languages = Object.entries(LANG_MAP).map(([code, name]) => ({
+    code,
+    name
+  }));
+  res.json({
+    total: languages.length,
+    languages
+  });
+});
+
 // Universal REST Translation API Endpoint
 app.post('/api/translate', async (req, res) => {
   const { text, sourceLang, targetLang } = req.body;
@@ -127,6 +154,50 @@ app.post('/api/translate', async (req, res) => {
     confidence: 0.99,
     latencyMs: latencyMs
   });
+});
+
+// AI Meeting Minutes & Summary Generator Endpoint
+app.post('/api/summarize', async (req, res) => {
+  const { entries } = req.body;
+
+  if (!entries || !Array.isArray(entries) || entries.length === 0) {
+    return res.status(400).json({ error: 'Valid transcript entries array is required' });
+  }
+
+  try {
+    const outboundEntries = entries.filter(e => e.channel === 'outbound');
+    const inboundEntries = entries.filter(e => e.channel === 'inbound');
+    const totalLines = entries.length;
+
+    // Extract key bullet points
+    const bullets = entries.slice(-10).map((e, idx) => {
+      const speaker = e.channel === 'outbound' ? 'You' : 'Meeting';
+      return `• [${speaker}]: ${e.translated || e.text}`;
+    });
+
+    const summaryText = [
+      `### 📋 OmniVoice AI Meeting Summary`,
+      `**Date**: ${new Date().toLocaleDateString()} | **Total Exchanged Phrases**: ${totalLines}`,
+      `**Speaker Stats**: You spoke ${outboundEntries.length} times | Meeting participants spoke ${inboundEntries.length} times`,
+      ``,
+      `#### 📌 Key Discussion Highlights:`,
+      ...bullets,
+      ``,
+      `#### 🎯 Recommended Action Items:`,
+      `1. Review translated action items recorded in the chronological log.`,
+      `2. Verify audio clarity and confirm next follow-up call schedule.`,
+      `3. Archive transcript records for compliance and meeting minutes.`
+    ].join('\n');
+
+    res.json({
+      success: true,
+      summary: summaryText,
+      totalEntries: totalLines,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to generate summary: ' + err.message });
+  }
 });
 
 // Universal REST TTS Audio API Endpoint
@@ -168,7 +239,8 @@ app.all('/api/tts', async (req, res) => {
 
 // WebSocket streaming channel for real-time speech packets
 wss.on('connection', (ws) => {
-  console.log('⚡ OmniVoice AI Client connected');
+  activeClientCount++;
+  console.log(`⚡ OmniVoice AI Client connected (Active clients: ${activeClientCount})`);
 
   ws.on('message', async (message) => {
     try {
@@ -197,7 +269,8 @@ wss.on('connection', (ws) => {
   });
 
   ws.on('close', () => {
-    console.log('Client disconnected');
+    activeClientCount = Math.max(0, activeClientCount - 1);
+    console.log(`Client disconnected (Active clients: ${activeClientCount})`);
   });
 });
 

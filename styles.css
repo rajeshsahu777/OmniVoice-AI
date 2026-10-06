@@ -722,4 +722,62 @@ footer {
   }
 }
 
+/* Export Menu Dropdown & Options */
+.export-option-btn {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #cbd5e1;
+  padding: 0.5rem 0.8rem;
+  font-size: 0.82rem;
+  font-family: var(--font-main);
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.export-option-btn:hover {
+  background: rgba(139, 92, 246, 0.25);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+/* Shortcut Chips */
+.shortcut-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.shortcut-chip kbd {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: #f1f5f9;
+}
+
+/* Mute Toggle State */
+#toggleMuteBtn.muted {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  color: #fca5a5 !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.3);
+}
+
+#toggleMuteBtn.muted:hover {
+  background: rgba(239, 68, 68, 0.35) !important;
+}
+
 
