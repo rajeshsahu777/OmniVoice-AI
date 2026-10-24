@@ -122,6 +122,25 @@ async function runTests() {
     }
   });
 
+  // Test 7: Auto Language Detection Endpoint
+  await assertTest('POST /api/detect auto-detects input language correctly', async () => {
+    const res = await fetch('http://localhost:3000/api/detect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text: 'Bonjour tout le monde, comment allez-vous?'
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.detectedCode !== 'fr') {
+      throw new Error(`Expected language code 'fr', got '${data.detectedCode}'`);
+    }
+    if (!data.detectedLanguage || !data.detectedLanguage.toLowerCase().includes('french')) {
+      throw new Error(`Expected language name 'French', got '${data.detectedLanguage}'`);
+    }
+  });
+
   console.log('\n==================================================');
   console.log(`🎉 Results: ${passedTests}/${totalTests} tests passed!`);
   console.log('==================================================\n');

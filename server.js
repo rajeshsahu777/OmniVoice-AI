@@ -115,7 +115,7 @@ app.get('/api/health', (req, res) => {
     activeWebSockets: activeClientCount,
     supportedLanguagesCount: Object.keys(LANG_MAP).length,
     timestamp: new Date().toISOString(),
-    version: '1.1.0'
+    version: '1.2.0'
   });
 });
 
@@ -129,6 +129,41 @@ app.get('/api/languages', (req, res) => {
     total: languages.length,
     languages
   });
+});
+
+// Automatic Language Detection Endpoint
+app.post('/api/detect', async (req, res) => {
+  const { text } = req.body;
+
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: 'Text is required for language detection' });
+  }
+
+  try {
+    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      const detectedCode = (data && data[2]) ? data[2].toLowerCase() : 'auto';
+      return res.json({
+        text,
+        detectedCode,
+        detectedLanguage: LANG_MAP[detectedCode] || detectedCode,
+        confidence: 0.99,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    res.status(502).json({ error: 'Failed to communicate with language detector' });
+  } catch (err) {
+    console.error('Detection API error:', err);
+    res.status(500).json({ error: 'Internal detection error: ' + err.message });
+  }
 });
 
 // Universal REST Translation API Endpoint

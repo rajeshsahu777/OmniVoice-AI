@@ -263,43 +263,101 @@ document.addEventListener('DOMContentLoaded', () => {
     updateLanguageLabels();
   });
 
-  // Real Mic Waveform Visualizer
+  // Real Mic & Audio Waveform Visualizers with High-DPI support
   function setupCanvas(canvas) {
+    if (!canvas || !canvas.parentElement) return null;
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = (rect.width || 400) * dpr;
+    canvas.height = (rect.height || 75) * dpr;
     const ctx = canvas.getContext('2d');
-    canvas.width = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
+    ctx.scale(dpr, dpr);
     return ctx;
   }
 
-  function drawWaveform(canvas, ctx, isActive, color = '#818cf8') {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const width = canvas.width;
-    const height = canvas.height;
+  function resizeAllVisualizers() {
+    setupCanvas(outboundCanvas);
+    setupCanvas(inboundCanvas);
+  }
+  window.addEventListener('resize', resizeAllVisualizers);
+
+  function drawWaveform(canvas, ctx, isActive, mode = 'outbound') {
+    if (!canvas || !ctx) return;
+    const width = canvas.parentElement ? canvas.parentElement.clientWidth : 400;
+    const height = canvas.parentElement ? canvas.parentElement.clientHeight : 75;
     const centerY = height / 2;
 
-    ctx.beginPath();
-    ctx.lineWidth = 2.5;
-    ctx.strokeStyle = color;
+    ctx.clearRect(0, 0, width, height);
 
-    const bars = 40;
-    const barWidth = width / bars;
-    const time = Date.now() * 0.005;
-
-    for (let i = 0; i < bars; i++) {
-      const x = i * barWidth;
-      let amplitude = 0;
-      if (isActive) {
-        const freqVal = (dataArray && dataArray[i % 32]) ? dataArray[i % 32] / 255 : 0.25;
-        amplitude = Math.sin(i * 0.4 + time) * (12 + freqVal * 35);
-      } else {
-        amplitude = Math.sin(i * 0.3 + time) * 3;
-      }
-      if (!isActive) amplitude = Math.max(2, amplitude);
-
-      ctx.lineTo(x, centerY + amplitude);
+    // Refresh live mic frequency data if active
+    if (mode === 'outbound' && micAnalyser && dataArray && isActive) {
+      micAnalyser.getByteFrequencyData(dataArray);
     }
 
+    const time = Date.now() * 0.003;
+    const isOutbound = mode === 'outbound';
+    const primaryColor = isOutbound ? '#8b5cf6' : '#06b6d4';
+    const secondaryColor = isOutbound ? '#ec4899' : '#3b82f6';
+
+    // Calculate energy level
+    let avgEnergy = 0;
+    if (isActive && isOutbound && dataArray) {
+      let sum = 0;
+      for (let i = 0; i < 16; i++) sum += dataArray[i];
+      avgEnergy = sum / (16 * 255);
+    } else if (isActive) {
+      avgEnergy = 0.5 + Math.sin(time * 3) * 0.3;
+    }
+
+    // Layer 1: Ambient frequency bars in background
+    const barCount = 36;
+    const barWidth = width / barCount;
+    for (let i = 0; i < barCount; i++) {
+      let barHeight = 4;
+      if (isActive) {
+        const val = (dataArray && isOutbound) ? (dataArray[i % 32] / 255) : (Math.sin(i * 0.5 + time * 4) * 0.5 + 0.5);
+        barHeight = Math.max(4, val * (height * 0.7));
+      } else {
+        barHeight = Math.max(3, Math.sin(i * 0.3 + time * 1.5) * 5 + 6);
+      }
+
+      ctx.fillStyle = isOutbound ? 'rgba(139, 92, 246, 0.18)' : 'rgba(6, 182, 212, 0.18)';
+      ctx.fillRect(i * barWidth + 2, height - barHeight - 2, barWidth - 4, barHeight);
+    }
+
+    // Layer 2: Glowing dynamic sine wave
+    ctx.save();
+    ctx.shadowBlur = isActive ? (10 + avgEnergy * 15) : 4;
+    ctx.shadowColor = primaryColor;
+    ctx.beginPath();
+    ctx.lineWidth = isActive ? 2.8 : 1.8;
+
+    const gradient = ctx.createLinearGradient(0, 0, width, 0);
+    gradient.addColorStop(0, primaryColor);
+    gradient.addColorStop(0.5, secondaryColor);
+    gradient.addColorStop(1, primaryColor);
+    ctx.strokeStyle = gradient;
+
+    const points = 50;
+    const step = width / points;
+
+    for (let i = 0; i <= points; i++) {
+      const x = i * step;
+      let amp = 0;
+      if (isActive) {
+        const freq = (dataArray && isOutbound) ? (dataArray[i % 32] / 255) : 0.35;
+        amp = Math.sin(i * 0.35 + time * 5) * (8 + freq * 24 + avgEnergy * 10);
+      } else {
+        amp = Math.sin(i * 0.25 + time * 2) * 3.5;
+      }
+      if (i === 0) {
+        ctx.moveTo(x, centerY + amp);
+      } else {
+        ctx.lineTo(x, centerY + amp);
+      }
+    }
     ctx.stroke();
+    ctx.restore();
   }
 
   function startVisualizers() {
@@ -307,8 +365,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const inboundCtx = setupCanvas(inboundCanvas);
 
     function animate() {
-      drawWaveform(outboundCanvas, outboundCtx, isLive, '#8b5cf6');
-      drawWaveform(inboundCanvas, inboundCtx, isInboundActive, '#06b6d4');
+      drawWaveform(outboundCanvas, outboundCtx, isLive && !isMuted, 'outbound');
+      drawWaveform(inboundCanvas, inboundCtx, isInboundActive, 'inbound');
       requestAnimationFrame(animate);
     }
 

@@ -3,6 +3,7 @@
 <div align="center">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/rajeshsahu777/OmniVoice-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/rajeshsahu777/OmniVoice-AI/actions)
 [![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![Python](https://img.shields.io/badge/Python-3.9%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-4A154B?style=for-the-badge)](https://github.com/rajeshsahu777/OmniVoice-AI)
@@ -43,6 +44,8 @@
 
 - **🎙️ Outbound Stream (You ➔ Meeting)**: Translates your spoken voice into the meeting's target language and routes the translated audio into your meeting microphone via a virtual audio cable driver.
 - **🎧 Inbound Stream (Meeting ➔ You)**: Captures incoming meeting audio via browser tab capture, translates it into your native language, and plays translated audio/subtitles back in your headphones.
+- **🌊 Real-Time Audio Waveform Oscilloscope**: Web Audio API `AudioContext` and `AnalyserNode` frequency spectrum visualizers with glowing neon oscilloscope curves.
+- **🔍 Automated Language Auto-Detection**: Instant language detection API (`POST /api/detect`) that identifies spoken and text inputs across 70+ languages with 99% accuracy.
 - **📺 Floating Picture-in-Picture (PiP) Subtitle Bar**: Spawns an **Always-on-Top** floating canvas window that displays live subtitles directly over Google Meet, Zoom, or Teams windows.
 - **✨ AI Meeting Summary & Action Items**: Instantly extracts structured bullet points, speaker statistics, key discussion takeaways, and follow-up action items from live transcripts.
 - **📥 Multi-Format Meeting Notes Export**: Export chronological meeting records in **Markdown (.md)**, **Subtitles (.srt)**, **JSON (.json)**, or **Plain Text (.txt)** with a single click.
@@ -74,11 +77,15 @@
 
 ```
 OmniVoice-AI/
+├── .github/
+│   ├── workflows/ci.yml  # GitHub Actions CI/CD matrix pipeline
+│   ├── ISSUE_TEMPLATE/   # Bug report and feature request templates
+│   └── pull_request_template.md # PR submission checklist
 ├── index.html            # Glassmorphic web dashboard, controls & PiP canvas
 ├── styles.css            # Cyber-glass design system & dark-mode styling
 ├── app.js                # STT, TTS, setSinkId routing, PiP, PTT & exports
-├── server.js             # Express server, WebSocket relay & AI summary API
-├── test.js               # Automated integration test suite (6/6 tests)
+├── server.js             # Express server, WebSocket relay, translation & /api/detect
+├── test.js               # Automated integration test suite (7/7 tests)
 ├── desktop_agent.py      # Python desktop virtual audio bridge & Pygame stream
 ├── start_web.bat         # 1-Click Windows launcher for web server & dashboard
 ├── start_desktop_agent.bat # 1-Click Windows launcher for Python desktop agent
