@@ -9,9 +9,14 @@ async function runTests() {
   console.log('🧪 OmniVoice AI - Running Integration Test Suite');
   console.log('==================================================\n');
 
-  // Launch server in-process for testing
-  const server = require('./server.js');
-  await new Promise(resolve => setTimeout(resolve, 800));
+  const { server } = require('./server.js');
+  if (server && !server.listening) {
+    await new Promise(resolve => server.once('listening', resolve));
+  } else {
+    await new Promise(resolve => setTimeout(resolve, 800));
+  }
+
+  const BASE_URL = process.env.TEST_URL || 'http://127.0.0.1:3000';
 
   let totalTests = 0;
   let passedTests = 0;
@@ -30,7 +35,7 @@ async function runTests() {
 
   // Test 1: Health check endpoint
   await assertTest('GET /api/health returns healthy status', async () => {
-    const res = await fetch('http://localhost:3000/api/health');
+    const res = await fetch(`${BASE_URL}/api/health`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (data.status !== 'healthy') throw new Error(`Unexpected status: ${data.status}`);
@@ -41,7 +46,7 @@ async function runTests() {
 
   // Test 2: Languages catalog endpoint
   await assertTest('GET /api/languages returns 70+ languages', async () => {
-    const res = await fetch('http://localhost:3000/api/languages');
+    const res = await fetch(`${BASE_URL}/api/languages`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!data.languages || data.languages.length < 50) {
@@ -54,7 +59,7 @@ async function runTests() {
 
   // Test 3: Translation Endpoint (Hindi -> English)
   await assertTest('POST /api/translate handles Hindi to English', async () => {
-    const res = await fetch('http://localhost:3000/api/translate', {
+    const res = await fetch(`${BASE_URL}/api/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -72,7 +77,7 @@ async function runTests() {
 
   // Test 4: Translation Endpoint (English -> Spanish)
   await assertTest('POST /api/translate handles English to Spanish', async () => {
-    const res = await fetch('http://localhost:3000/api/translate', {
+    const res = await fetch(`${BASE_URL}/api/translate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -90,7 +95,7 @@ async function runTests() {
 
   // Test 5: AI Meeting Summary Generator
   await assertTest('POST /api/summarize extracts meeting minutes & action items', async () => {
-    const res = await fetch('http://localhost:3000/api/summarize', {
+    const res = await fetch(`${BASE_URL}/api/summarize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -110,7 +115,7 @@ async function runTests() {
 
   // Test 6: TTS Audio Endpoint
   await assertTest('GET /api/tts returns valid audio/mpeg stream', async () => {
-    const res = await fetch('http://localhost:3000/api/tts?text=OmniVoice%20AI&lang=en');
+    const res = await fetch(`${BASE_URL}/api/tts?text=OmniVoice%20AI&lang=en`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const contentType = res.headers.get('content-type');
     if (!contentType || !contentType.includes('audio')) {
@@ -124,7 +129,7 @@ async function runTests() {
 
   // Test 7: Auto Language Detection Endpoint
   await assertTest('POST /api/detect auto-detects input language correctly', async () => {
-    const res = await fetch('http://localhost:3000/api/detect', {
+    const res = await fetch(`${BASE_URL}/api/detect`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
