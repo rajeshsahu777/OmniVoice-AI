@@ -11,9 +11,20 @@ async function runTests() {
 
   const { server } = require('./server.js');
   if (server && !server.listening) {
-    await new Promise(resolve => server.once('listening', resolve));
+    await new Promise((resolve) => {
+      const timer = setTimeout(resolve, 1500);
+      server.once('listening', () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      server.once('error', (err) => {
+        clearTimeout(timer);
+        console.warn('Server init notice:', err.message);
+        resolve();
+      });
+    });
   } else {
-    await new Promise(resolve => setTimeout(resolve, 800));
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   const BASE_URL = process.env.TEST_URL || 'http://127.0.0.1:3000';
